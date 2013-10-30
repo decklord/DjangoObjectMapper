@@ -1,4 +1,3 @@
-from social.models import User, Source, UserToken
 from django.db import connection, transaction
 
 class Mapper(object):
@@ -47,58 +46,3 @@ class Mapper(object):
             val = self.external_object.get(value, default)
 
         return val if val is not None else default
-
-class TwitterMapper(Mapper):
-
-    def set_base_data(self):
-
-        self.source, _ = Source.objects.get_or_create(
-            name = 'Twitter',
-            defaults = {
-                'url': 'http://www.twitter.com'
-            }
-        )
-
-class TwitterUserMapper(TwitterMapper):
-
-    def get_or_create(self):
-
-        params = {
-            "pk": self.get_external_val('id'),
-            "defaults" : {
-
-                'username': self.get_external_val('screen_name'),
-                'fullname': self.get_external_val('name'),
-                'url': "%s/%s" % (self.source.url, self.get_external_val('screen_name')),
-                'source__id': self.source.pk,
-
-                'information': self.get_external_val('description'),
-                'location': self.get_external_val('location'),
-                'time_zone': self.get_external_val('time_zone'),
-                'website': self.get_external_val('url'),
-
-                'nbr_statuses': self.get_external_val('statuses_count', 0),
-                'nbr_friends': self.get_external_val('friends_count', 0),
-                'nbr_followers': self.get_external_val('followers_count', 0),
-                'nbr_favorites': self.get_external_val('favourites_count', 0)
-
-            }
-        }
-
-        self.user, created = self.get_or_create_django_object(User, params)
-        return self.user, created
-
-    def set_token(self, token):
-
-        params = {
-            "user_id" : self.user.pk,
-            "defaults" : {
-                "access_token" : token
-            }
-        }
-
-        self.user.tokens, created = self.get_or_create_django_object(UserToken, params)
-        return self.user.tokens, created
-
-    def set_profile_image(self):
-        pass
